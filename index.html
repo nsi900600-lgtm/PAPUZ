@@ -130,7 +130,7 @@
         @keyframes blink { 50% { opacity: 0.3; } }
         .rec-dot { display: inline-block; width: 10px; height: 10px; background-color: #ff3b30; border-radius: 50%; margin-right: 8px; animation: blink 1s infinite; }
         
-        /* Плеер ГС - без лишних фонов */
+        /* Плеер ГС */
         .voice-player {
             display: flex;
             align-items: center;
@@ -408,7 +408,7 @@
     <div id="version-modal" class="modal">
         <div class="modal-box">
             <h3 style="color: #34C759; margin-bottom: 15px;">О приложении</h3>
-            <p style="font-size: 18px; color: white; margin-bottom: 25px;">версия beta 1</p>
+            <p style="font-size: 18px; color: white; margin-bottom: 25px;">версия beta 2</p>
             <button class="btn-primary" onclick="closeVersionModal()" style="margin-bottom: 0;">ОК</button>
         </div>
     </div>
@@ -742,7 +742,7 @@
                                             if ("Notification" in window && Notification.permission === "granted") {
                                                 let senderName = users[msg.sender] ? users[msg.sender].nickname : msg.sender;
                                                 let title = isChannel ? `📢 ${senderName}` : senderName;
-                                                let notifBody = msg.audioUrl ? "Голосовое сообщение" : msg.text;
+                                                let notifBody = msg.audioUrl ? "🎤 Голосовое сообщение" : msg.text;
                                                 new Notification(title, { body: notifBody });
                                             }
                                         } catch (e) {}
@@ -1674,7 +1674,7 @@
                 bubble.innerHTML = innerHTML + metaHtml;
 
                 let pressTimer;
-                const menuText = msg.audioUrl ? "Голосовое сообщение" : msg.text;
+                const menuText = msg.audioUrl ? "🎤 Голосовое сообщение" : msg.text;
                 
                 const startPress = (e) => {
                     if (e.type === 'mousedown' && e.button === 2) return; 
@@ -2029,4 +2029,3 @@
     </script>
 </body>
 </html>
-
