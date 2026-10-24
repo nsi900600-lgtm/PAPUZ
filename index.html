@@ -27,7 +27,7 @@
             user-select: auto; 
         }
 
-        body { background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; }
+        body { background-color: #121212; color: #ffffff; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; padding: 20px; transition: background-color 0.5s; }
         
         .title { font-size: 42px; font-weight: bold; color: #34C759; margin-bottom: 50px; cursor: pointer; }
         
@@ -130,7 +130,6 @@
         @keyframes blink { 50% { opacity: 0.3; } }
         .rec-dot { display: inline-block; width: 10px; height: 10px; background-color: #ff3b30; border-radius: 50%; margin-right: 8px; animation: blink 1s infinite; }
         
-        /* Плеер ГС */
         .voice-player {
             display: flex;
             align-items: center;
@@ -202,10 +201,44 @@
             font-weight: 500;
         }
 
+        /* Жуткий режим хакерской атаки */
+        @keyframes glitch {
+            0% { transform: translate(0); }
+            20% { transform: translate(-3px, 3px); }
+            40% { transform: translate(-3px, -3px); }
+            60% { transform: translate(3px, 3px); }
+            80% { transform: translate(3px, -3px); }
+            100% { transform: translate(0); }
+        }
+        @keyframes matrixBg {
+            0% { background-color: #1a0000; }
+            50% { background-color: #330000; }
+            100% { background-color: #1a0000; }
+        }
+        .hacked-mode {
+            animation: matrixBg 2s infinite, glitch 0.2s infinite;
+        }
+        .hacked-mode .msg-sent, .hacked-mode .msg-received {
+            background-color: #ff0000 !important;
+            color: #ffff00 !important;
+            border: 2px dashed #00ff00;
+            font-weight: bold;
+        }
+        .hacked-alert {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255, 0, 0, 0.2);
+            z-index: 9999;
+            pointer-events: none;
+            display: none;
+            box-shadow: inset 0 0 100px #ff0000;
+        }
+
     </style>
 </head>
 <body>
 
+    <div class="hacked-alert" id="hacked-overlay"></div>
     <div class="title" id="main-app-title" onclick="unlockTester()">PAPUZ<span class="beta-tag">BETA</span></div>
 
     <div id="home-screen" class="screen active">
@@ -425,7 +458,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
         import { getDatabase, ref, set, get, update, onValue, push, child, onDisconnect } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
 
-        // Стандартные чистые SVG иконки
         const svgMic = `<svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M12 14c1.66 0 3-1.34 3-3V5c0-1.66-1.34-3-3-3S9 3.34 9 5v6c0 1.66 1.34 3 3 3zm5-3c0 2.76-2.24 5-5 5s-5-2.24-5-5H5c0 3.53 2.61 6.43 6 6.92V21h2v-3.08c3.39-.49 6-3.39 6-6.92h-2z"/></svg>`;
         const svgSend = `<svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>`;
         const svgStop = `<svg viewBox="0 0 24 24" width="24" height="24" fill="white"><path d="M6 6h12v12H6z"/></svg>`;
@@ -660,6 +692,30 @@
             document.getElementById('dialog-header-name').innerHTML = `${statusDotHtml}<span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${escapeHtml(displayName)}</span>` + getVerifiedHtml(partner.verified) + getFakeHtml(partner.isFake) + (currentUser && currentUser.toLowerCase() === 'papuz' ? getBannedHtml(partner.banned) : '');
         }
 
+        // Проверка режима взлома для чата
+        function checkHackedState(chatId) {
+            const chatMsgs = chats[chatId] || {};
+            let isHacked = false;
+            for (let key in chatMsgs) {
+                if (key !== 'pinned') {
+                    let m = chatMsgs[key];
+                    if (m.text && m.text.trim() === '!hack') {
+                        isHacked = true;
+                        break;
+                    }
+                }
+            }
+            const body = document.body;
+            const overlay = document.getElementById('hacked-overlay');
+            if (isHacked) {
+                body.classList.add('hacked-mode');
+                if (overlay) overlay.style.display = 'block';
+            } else {
+                body.classList.remove('hacked-mode');
+                if (overlay) overlay.style.display = 'none';
+            }
+        }
+
         onValue(ref(db, 'users'), (snapshot) => {
             if (snapshot.exists()) {
                 users = snapshot.val();
@@ -753,7 +809,10 @@
                     }
                 }
 
-                if (currentChatPartner) renderMessages();
+                if (currentChatPartner) {
+                    renderMessages();
+                    checkHackedState(getChatId(currentUser, currentChatPartner));
+                }
                 if (currentUser) renderActiveChats();
             }
         });
@@ -1557,6 +1616,8 @@
             const chatId = getChatId(currentUser, currentChatPartner);
             const chatMsgs = chats[chatId] || {};
             
+            checkHackedState(chatId);
+
             const pinnedData = chatMsgs['pinned'];
             currentPinnedList = [];
             
