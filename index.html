@@ -65,7 +65,8 @@
         .search-container input { margin-bottom: 0; background-color: #1c1c1e; }
         
         .search-results { width: 100%; display: flex; flex-direction: column; }
-        .user-card { width: 100%; display: flex; align-items: center; padding: 10px; background-color: #1c1c1e; border-radius: 10px; margin-bottom: 10px; cursor: pointer; }
+        .user-card { width: 100%; display: flex; align-items: center; padding: 10px; background-color: #1c1c1e; border-radius: 10px; margin-bottom: 10px; cursor: pointer; transition: transform 0.1s; }
+        .user-card:active { transform: scale(0.98); }
         .user-card .avatar { margin-bottom: 0; margin-right: 15px; }
         .user-card-info { display: flex; flex-direction: column; overflow: hidden; flex: 1; }
         
@@ -126,7 +127,7 @@
         .receipt-unread { border: 1.5px solid rgba(255, 255, 255, 0.6); background-color: transparent; }
         .receipt-read { background-color: #ffffff; border: 1.5px solid #ffffff; }
 
-        /* Элементы для голосовых сообщений */
+        /* Элементы для ГС */
         @keyframes blink { 50% { opacity: 0.3; } }
         .rec-dot { display: inline-block; width: 10px; height: 10px; background-color: #ff3b30; border-radius: 50%; margin-right: 8px; animation: blink 1s infinite; }
         audio { height: 35px; max-width: 220px; border-radius: 20px; outline: none; margin-top: 5px; background-color: rgba(255,255,255,0.1); }
@@ -221,7 +222,6 @@
         </div>
 
         <div class="message-input-area" id="message-input-area">
-            <!-- Панель записи ГС -->
             <div id="recording-ui" style="display: none; flex: 1; align-items: center; justify-content: space-between; background-color: #2c2c2e; border-radius: 10px; padding: 0 15px; margin-bottom: 15px; height: 50px;">
                 <div style="display: flex; align-items: center;">
                     <span class="rec-dot"></span>
@@ -232,7 +232,6 @@
             
             <input type="text" id="message-input" placeholder="Сообщение..." onkeypress="handleKeyPress(event)" oninput="toggleInputButtons()">
             
-            <!-- Кнопки отправки/ГС -->
             <button id="btn-send" class="btn-primary" style="display: none;" onclick="sendMessage()">➤</button>
             <button id="btn-mic" class="btn-primary" onclick="toggleRecording()">🎤</button>
         </div>
@@ -354,8 +353,6 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js";
         import { getDatabase, ref, set, get, update, onValue, push, child, onDisconnect } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js";
-        // Подключаем Storage для хранения голосовых
-        import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/13.1.0/firebase-storage.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDoRhwrqdh4HH-6aYOnK8tH1Y62Sw5EDSw",
@@ -370,7 +367,6 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
-        const storage = getStorage(app); // Инициализация хранилища
 
         let users = {};
         let chats = {};
@@ -399,14 +395,13 @@
         let testerClickCount = 0;
         let testerTimeout;
         
-        // Переменные для записи ГС
         let mediaRecorder;
         let audioChunks = [];
         let recTimer;
         let recSeconds = 0;
         let isRecording = false;
         let isUploading = false;
-        const MAX_REC_SECONDS = 90; // Лимит 1 минута 30 секунд
+        const MAX_REC_SECONDS = 90; 
         
         let avatarSelectTarget = 'user';
         let tempChannelAvatar = "https://i.postimg.cc/859cw46Z/Picsart-26-10-23-22-17-04-454.jpg";
@@ -666,7 +661,6 @@
                                             if ("Notification" in window && Notification.permission === "granted") {
                                                 let senderName = users[msg.sender] ? users[msg.sender].nickname : msg.sender;
                                                 let title = isChannel ? `📢 ${senderName}` : senderName;
-                                                // Проверка на голосовое
                                                 let notifBody = msg.audioUrl ? "🎤 Голосовое сообщение" : msg.text;
                                                 new Notification(title, { body: notifBody });
                                             }
@@ -740,7 +734,6 @@
             closeChatMenu();
         }
 
-        // Обновлено для копирования ГС (будет просто скрывать кнопку копирования)
         window.openMessageMenu = function(msgId, text, sender, isAudio) {
             selectedMsgId = msgId;
             selectedMsgText = text;
@@ -750,7 +743,6 @@
             document.getElementById('main-menu-options').style.display = 'block';
             document.getElementById('delete-menu-options').style.display = 'none';
             
-            // Если это ГС, скрываем кнопку Скопировать
             document.getElementById('menu-action-copy').style.display = isAudio ? 'none' : 'block';
 
             if (sender === currentUser) {
@@ -1431,7 +1423,6 @@
                     innerHTML += `<div style="background: rgba(0,0,0,0.2); border-left: 3px solid ${isSent ? '#ffffff' : '#34C759'}; padding: 5px 8px; font-size: 13px; margin-bottom: 5px; border-radius: 4px; color: ${isSent ? '#ffffff' : '#d1d1d6'}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">${escapeHtml(msg.replyTo)}</div>`;
                 }
                 
-                // Проверка: аудио или текст
                 if (msg.audioUrl) {
                     innerHTML += `<audio src="${msg.audioUrl}" controls></audio>`;
                 } else if (msg.text) {
@@ -1494,7 +1485,6 @@
             history.scrollTop = history.scrollHeight;
         }
 
-        // Переключатель кнопок: Микрофон или Отправка
         window.toggleInputButtons = function() {
             const input = document.getElementById('message-input');
             const text = input.value.trim();
@@ -1538,11 +1528,10 @@
             toggleInputButtons();
         }
 
-        // Логика записи ГС
+        // Обновленная логика записи ГС (через Base64 прямо в базу данных, без Storage)
         window.toggleRecording = async function() {
             if (isUploading) return;
             
-            // Если уже пишем, отправляем
             if (isRecording) {
                 stopRecording(true);
                 return;
@@ -1558,28 +1547,30 @@
                 };
                 
                 mediaRecorder.onstop = async () => {
-                    stream.getTracks().forEach(track => track.stop()); // Выключаем микрофон
+                    stream.getTracks().forEach(track => track.stop());
                     if (audioChunks.length === 0) return;
                     
                     isUploading = true;
                     const btnMic = document.getElementById('btn-mic');
                     btnMic.innerHTML = '⏳';
                     
-                    const audioBlob = new Blob(audioChunks, { type: mediaRecorder.mimeType });
-                    const fileName = `voice_${currentUser}_${Date.now()}.webm`; // Сохраняем как webm
-                    const audioRef = sRef(storage, `voices/${fileName}`);
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
                     
-                    try {
-                        await uploadBytes(audioRef, audioBlob);
-                        const url = await getDownloadURL(audioRef);
-                        await sendVoiceMessage(url);
-                    } catch(err) {
-                        showCustomAlert("Ошибка загрузки аудиосообщения.");
-                    }
-                    
-                    isUploading = false;
-                    btnMic.innerHTML = '🎤';
-                    audioChunks = [];
+                    // Конвертируем аудио в Base64 текст
+                    const reader = new FileReader();
+                    reader.readAsDataURL(audioBlob);
+                    reader.onloadend = async () => {
+                        const base64AudioMessage = reader.result;
+                        try {
+                            await sendVoiceMessage(base64AudioMessage);
+                        } catch(err) {
+                            showCustomAlert("Ошибка отправки аудиосообщения.");
+                        }
+                        
+                        isUploading = false;
+                        btnMic.innerHTML = '🎤';
+                        audioChunks = [];
+                    };
                 };
                 
                 mediaRecorder.start();
@@ -1598,7 +1589,7 @@
                     recSeconds++;
                     updateRecTimeUI();
                     if (recSeconds >= MAX_REC_SECONDS) {
-                        stopRecording(true); // Принудительно отправляем по достижении лимита
+                        stopRecording(true);
                     }
                 }, 1000);
                 
@@ -1620,10 +1611,10 @@
             btnMic.style.backgroundColor = '#34C759';
             
             if (!send) {
-                audioChunks = []; // Отменяем запись
+                audioChunks = []; 
                 mediaRecorder.stop();
             } else {
-                mediaRecorder.stop(); // Триггерит onstop, собирает блоб и отправляет
+                mediaRecorder.stop(); 
             }
         }
         
@@ -1637,14 +1628,14 @@
             document.getElementById('rec-time').innerText = `${m}:${s < 10 ? '0' : ''}${s}`;
         }
         
-        window.sendVoiceMessage = async function(audioUrl) {
+        window.sendVoiceMessage = async function(base64Audio) {
             const chatId = getChatId(currentUser, currentChatPartner);
             const msgRef = ref(db, 'chats/' + chatId);
             const newMsgRef = push(msgRef);
             
             let msgObj = {
                 sender: currentUser,
-                audioUrl: audioUrl,
+                audioUrl: base64Audio, // Сохраняем текстовый Base64 вместо ссылки на Storage
                 read: false,
                 timestamp: Date.now()
             };
@@ -1826,4 +1817,5 @@
         }
     </script>
 </body>
-    </html>
+</html>
+
