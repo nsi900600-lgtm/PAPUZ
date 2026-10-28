@@ -1,24 +1,199 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>PAPUZ</title>
-    <style>
-        body, html {
-            margin: 0;
-            padding: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #000000;
-            background-image: url('https://i.postimg.cc/447zSfJG/Picsart-26-10-25-16-01-54-121.jpg');
-            background-size: cover;
-            background-position: center;
-            background-repeat: no-repeat;
-            overflow: hidden;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>12345678</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+    body {
+      background-color: #050508;
+      overflow: hidden;
+      width: 100vw;
+      height: 100vh;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #canvas-container {
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+    #loader {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(10, 12, 22, 0.9);
+      border: 1px solid #00f0ff;
+      padding: 14px 22px;
+      border-radius: 12px;
+      color: #00f0ff;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+      pointer-events: none;
+      transition: opacity 0.4s ease;
+      z-index: 10;
+    }
+  </style>
 </head>
 <body>
+
+  <div id="loader">ZOAOSKENR</div>
+  <div id="canvas-container"></div>
+
+  <script type="importmap">
+    {
+      "imports": {
+        "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+        "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+      }
+    }
+  </script>
+
+  <script type="module">
+    import * as THREE from 'three';
+    import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+    import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+    const container = document.getElementById('canvas-container');
+    const loaderEl = document.getElementById('loader');
+
+    // 1. СЦЕНА, КАМЕРА И РЕНДЕРЕР
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0x050508);
+    scene.fog = new THREE.FogExp2(0x050508, 0.15);
+
+    const camera = new THREE.PerspectiveCamera(42, window.innerWidth / window.innerHeight, 0.1, 30);
+    camera.position.set(0, 0.05, 1.15);
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.toneMappingExposure = 1.15;
+    container.appendChild(renderer.domElement);
+
+    // Тач-управление камерой
+    const controls = new OrbitControls(camera, renderer.domElement);
+    controls.enableDamping = true;
+    controls.dampingFactor = 0.05;
+    controls.target.set(0, 0, 0);
+    controls.minDistance = 0.45;
+    controls.maxDistance = 3.0;
+
+    // 2. ОСВЕЩЕНИЕ
+    const ambientLight = new THREE.HemisphereLight(0xffffff, 0x090b16, 0.65);
+    scene.add(ambientLight);
+
+    // Основной студийный свет
+    const keyLight = new THREE.SpotLight(0xfff4e6, 5.0);
+    keyLight.position.set(1.8, 2.2, 2.2);
+    keyLight.angle = Math.PI / 3;
+    keyLight.penumbra = 0.8;
+    keyLight.castShadow = true;
+    keyLight.shadow.mapSize.set(1024, 1024);
+    keyLight.shadow.bias = -0.0005;
+    scene.add(keyLight);
+
+    // Голубой неоновый контровой свет слева-сзади
+    const rimLight1 = new THREE.PointLight(0x00f0ff, 5.5, 6);
+    rimLight1.position.set(-1.5, 0.8, -1.2);
+    scene.add(rimLight1);
+
+    // Пурпурный неоновый свет справа-снизу
+    const rimLight2 = new THREE.PointLight(0xff0055, 3.5, 6);
+    rimLight2.position.set(1.5, -0.8, -1.0);
+    scene.add(rimLight2);
+
+    // 3. ШЕЙДЕР КОЖИ С ПОДПОВЕРХНОСТНЫМ РАССЕИВАНИЕМ (SSS) И ТЕКСТУРАМИ
+    const texLoader = new THREE.TextureLoader();
+    const headMap = texLoader.load('https://threejs.org/examples/models/gltf/LeePerrySmith/Map-COL.jpg');
+    headMap.colorSpace = THREE.SRGBColorSpace;
+
+    const headNormal = texLoader.load('https://threejs.org/examples/models/gltf/LeePerrySmith/Infinite-Level_02_Tangent_SmoothUV.jpg');
+
+    const headMaterial = new THREE.MeshStandardMaterial({
+      color: 0xffffff,
+      map: headMap,
+      normalMap: headNormal,
+      normalScale: new THREE.Vector2(0.85, 0.85),
+      roughness: 0.42,
+      metalness: 0.05
+    });
+
+    headMaterial.onBeforeCompile = (shader) => {
+      shader.uniforms.uRimColor = { value: new THREE.Color(0x00f0ff) };
+      shader.uniforms.uSubsurfaceColor = { value: new THREE.Color(0xff3b1f) };
+
+      shader.fragmentShader = `
+        uniform vec3 uRimColor;
+        uniform vec3 uSubsurfaceColor;
+      ` + shader.fragmentShader;
+
+      shader.fragmentShader = shader.fragmentShader.replace(
+        '#include <dithering_fragment>',
+        `
+        #include <dithering_fragment>
+        vec3 viewDir = normalize(vViewPosition);
+        float fresnel = pow(1.0 - saturate(dot(viewDir, normal)), 2.8);
+        vec3 sss = uSubsurfaceColor * pow(1.0 - saturate(dot(viewDir, normal)), 1.5) * 0.2;
+        vec3 rim = uRimColor * fresnel * 0.35;
+        gl_FragColor.rgb += sss + rim;
+        `
+      );
+    };
+
+    // 4. ЗАГРУЗКА 3D-СКАНА ГОЛОВЫ
+    const headGroup = new THREE.Group();
+    scene.add(headGroup);
+
+    const gltfLoader = new GLTFLoader();
+    gltfLoader.load(
+      'https://threejs.org/examples/models/gltf/LeePerrySmith/LeePerrySmith.glb',
+      (gltf) => {
+        const headMesh = gltf.scene.children[0];
+        headMesh.scale.set(0.26, 0.26, 0.26);
+        headMesh.position.set(0, -0.05, 0);
+        headMesh.castShadow = true;
+        headMesh.receiveShadow = true;
+        headMesh.material = headMaterial;
+        headGroup.add(headMesh);
+
+        loaderEl.style.opacity = '0';
+      },
+      undefined,
+      () => {
+        loaderEl.textContent = 'Оши';
+      }
+    );
+
+    // 5. АНИМАЦИЯ И РЕНДЕР
+    const clock = new THREE.Clock();
+
+    function animate() {
+      requestAnimationFrame(animate);
+
+      const elapsed = clock.getElapsedTime();
+
+      // Легкое плавное покачивание головы
+      headGroup.rotation.y = Math.sin(elapsed * 0.5) * 0.25;
+      headGroup.rotation.x = Math.sin(elapsed * 0.3) * 0.04;
+
+      controls.update();
+      renderer.render(scene, camera);
+    }
+
+    animate();
+
+    // Адаптация под размер экрана
+    window.addEventListener('resize', () => {
+      camera.aspect = window.innerWidth / window.innerHeight;
+      camera.updateProjectionMatrix();
+      renderer.setSize(window.innerWidth, window.innerHeight);
+    });
+  </script>
 </body>
 </html>
